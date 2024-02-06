@@ -370,7 +370,7 @@
 
             //------------------------------POLITICAL BOUNDARIES------------------------------
             const CityCouncilDistricts = new FeatureLayer({
-                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/0",
+                url: "",
                 renderer: {
                     type: "simple", // Simple Renderer 
                     label: "City Council Districts", //this label goes next to the color on legend
@@ -404,7 +404,7 @@
 
             const CommunityDistricts = new FeatureLayer({
 
-                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/1",
+                url: "",
                 renderer: {
                     type: "simple", // Simple Renderer 
                     label: "Community Districts", //this label goes next to the color on legend
@@ -437,7 +437,7 @@
             map.add(CommunityDistricts);
 
             const CongressionalDistricts = new FeatureLayer({
-                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/2",
+                url: "",
                 renderer: {
                     type: "simple", // Simple Renderer 
                     label: "Congressional Districts", //this label goes next to the color on legend
@@ -470,7 +470,7 @@
             map.add(CongressionalDistricts);
 
             const FireBatallions = new FeatureLayer({
-                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/3",
+                url: "",
                 renderer: {
                     type: "simple", // Simple Renderer 
                     label: "Fire Batallions", //this label goes next to the color on legend
@@ -503,7 +503,7 @@
             map.add(FireBatallions);
 
             const PolicePrecincts = new FeatureLayer({
-                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/4",
+                url: "",
                 renderer: {
                     type: "simple", // Simple Renderer 
                     label: "Police Precincts", //this label goes next to the color on legend
@@ -536,7 +536,7 @@
             map.add(PolicePrecincts);
 
             const SchoolDistricts = new FeatureLayer({
-                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/5",
+                url: "",
                 renderer: {
                     type: "simple", // Simple Renderer 
                     label: "School Districts", //this label goes next to the color on legend
@@ -569,7 +569,7 @@
             map.add(SchoolDistricts);
 
             const StateAssemblyDistricts = new FeatureLayer({
-                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/6",
+                url: "",
                 renderer: {
                     type: "simple", // Simple Renderer 
                     label: "State Assembly Districts", //this label goes next to the color on legend
@@ -602,7 +602,7 @@
             map.add(StateAssemblyDistricts);
 
             const StateSenateDistricts = new FeatureLayer({
-                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/7",
+                url: "",
                 renderer: {
                     type: "simple", // Simple Renderer 
                     label: "State Senate Districts", //this label goes next to the color on legend
@@ -635,7 +635,7 @@
             map.add(StateSenateDistricts);
             //------------------------------------------Lanes------------------------------------------
             const BikeLanes = new FeatureLayer({
-                url: "https://gis.nycdot.nyc/arcgis/rest/services/APM/Bike_Lane/MapServer/0",
+                url: "",
                 renderer: {
                     type: "simple", // Simple Renderer 
                     label: "Bike Lanes", //this label goes next to the color on legend
@@ -681,7 +681,7 @@
             map.add(BikeLanes);
 
             const HOVLanes = new FeatureLayer({
-                url: "https://gis.nycdot.nyc/arcgis/rest/services/APM/HOV_Lanes/MapServer/0",
+                url: "",
                 renderer: {
                     type: "simple", // Simple Renderer 
                     label: "HOV Lanes", //this label goes next to the color on legend
@@ -723,7 +723,7 @@
             map.add(HOVLanes);
             //------------------------------------------Ped Plan Demand------------------------------------------
             const PedPlanDemand = new FeatureLayer({
-                url: "https://gis.nycdot.nyc/arcgis/rest/services/APM/Ped_Plan_Demand/MapServer/0",
+                url: "",
                 renderer: {
                     type: "simple", // Simple Renderer 
                     label: "Ped Plan Demand", //this label goes next to the color on legend
@@ -757,7 +757,7 @@
             map.add(PedPlanDemand);
             //------------------------------------------PedestrianRamps------------------------------------------
             const PedestrianRamps = new FeatureLayer({
-                url: "https://gis.nycdot.nyc/arcgis/rest/services/PEDRAMPS/PEDRAMPS_READONLY/MapServer/0",
+                url: "",
                 renderer: {
                     type: "simple", // Simple Renderer 
                     label: "Pedestrian Ramps (Inspected)", //this label goes next to the color on legend
@@ -798,7 +798,7 @@
             map.add(PedestrianRamps);
             //------------------------------------------Streets------------------------------------------
             const CobblestoneStreets = new FeatureLayer({
-                url: "https://gis.nycdot.nyc/arcgis/rest/services/APM/Cobblestone_Streets/MapServer/0",
+                url: "",
                 renderer: {
                     type: "simple", // Simple Renderer 
                     label: "Cobblestone Streets", //this label goes next to the color on legend
@@ -836,7 +836,7 @@
             map.add(CobblestoneStreets);
 
             const ConcreteStreets = new FeatureLayer({
-                url: "https://gis.nycdot.nyc/arcgis/rest/services/APM/Concrete_Streets/MapServer/0",
+                url: "",
                 renderer: {
                     type: "simple", // Simple Renderer 
                     label: "Concrete Streets", //this label goes next to the color on legend
@@ -878,7 +878,7 @@
             map.add(ConcreteStreets);
             //------------------------------------------AllWayStops------------------------------------------
             const AllWayStops = new FeatureLayer({
-                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/0",
+                url: "",
                 renderer: {
                     type: "simple", // Simple Renderer 
                     label: "City Council Districts", //this label goes next to the color on legend

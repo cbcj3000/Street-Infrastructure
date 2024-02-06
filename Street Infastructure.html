@@ -1,0 +1,1105 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <title>Street Infrastructure</title>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.26/esri/themes/light/main.css" />
+    <script src="https://js.arcgis.com/4.26/"></script>
+
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%;
+            height: 60px;
+            background-color: #e9862a;
+            box-shadow: -1px 11px 5px -2px rgba(0, 0, 0, 0.22);
+            z-index: 2;
+        }
+
+        h1 {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #FFF;
+            margin-left: 16px;
+        }
+
+        h2 {
+            padding-left: .5%;
+            line-height: 1.2;
+
+        }
+
+        h3 {
+            padding-left: 1%;
+        }
+
+        h4 {
+            padding-left: 1%;
+        }
+
+        dl {
+            margin: -1em 1.5em 1.5em 1.5em;
+            line-height: 250%;
+        }
+
+        dt {
+            list-style-type: disc;
+            vertical-align: middle;
+        }
+
+        dd {
+            display: list-item;
+            list-style-type: disc;
+            margin-left: 50px;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            color: #323232;
+            z-index: 1;
+        }
+
+        #searchBar {
+            border-style: solid;
+            border-width: 4px;
+            border-radius: 6px;
+            border-color: gray;
+            box-shadow: -2px 2px black;
+        }
+    </style>
+</head>
+
+<body>
+    <header role="banner">
+        <h1>Street Infrastructure</h1>
+    </header>
+    <main id="map" role="main"></main>
+</body>
+
+
+<script>
+
+    function SidePanelFunc({
+        view,
+        searchWidget,
+        Feature,
+        layers,
+        promiseUtils,
+        sidePanelDefaultContent,
+    }) {
+        const graphic = {
+            popupTemplate: {
+                content: sidePanelDefaultContent
+            }
+        }
+
+        // create div for graphic
+        let sidePanelDiv = document.createElement("div");
+        sidePanelDiv.id = "sidePanel";
+        sidePanelDiv.className = "esri-widget"
+
+        let sliderDiv = document.createElement("div");
+        sliderDiv.id = "sliderC";
+        sliderDiv.style.background = "black"
+
+        // append div to main HTML container
+        const mainContainer = document.getElementById("map")
+        const firstChild = mainContainer.firstChild
+        if (firstChild) {
+            mainContainer.insertBefore(sidePanelDiv, firstChild)
+        } else {
+            mainContainer.appendChild(sidePanelDiv)
+        }
+
+        // Provide graphic to a new instance of a Feature widget
+        const feature = new Feature({
+            container: document.getElementById("sidePanel"),
+            graphic: graphic,
+            map: view.map, //????
+            spatialReference: view.spatialReference //????
+        });
+
+        //// SearchBar /////
+
+        // create div for searchBar
+        let searchBarDiv = document.createElement("div");
+        searchBarDiv.id = "searchBar";
+
+        // append div to sidePanelDiv
+        document.getElementById("sidePanel").appendChild(searchBarDiv)
+        // document.getElementById("sidePanel").appendChild(sliderDiv)
+
+        // set searchBarDiv as container of widget
+        // Position should be set as "manually" when adding the widget to view 
+        searchWidget.container = document.getElementById("searchBar")
+
+        // Add styles to HTML 
+        const styles = `
+    #sidePanel {
+      float: left;
+      width: 30%;
+      height: 100%;
+      padding: 1%;
+      overflow: scroll;
+      max-height: 100%;
+    }
+
+    #searchBar {
+      width: 100%
+    }
+  `
+        const styleSheet = document.createElement("style")
+        styleSheet.type = 'text/css'
+        styleSheet.innerText = styles
+        document.head.appendChild(styleSheet)
+
+        // Executes after selecting a search result
+        searchWidget.on("select-result", function (event) {
+            let highlight;
+            let objectId;
+
+            const searchResult = event.result.target;
+            feature.graphic = searchResult; // render results in sidepanel
+
+            // make visible searchResult's layer
+            const currentLayer = view.map.findLayerById(searchResult.sourceLayer.id)
+            currentLayer.visible = true;
+
+            const newObjectId = event.result.key;
+
+            if (!newObjectId) {
+                highlight ?.remove();
+                objectId = feature.graphic = {
+                    popupTemplate: {
+                        content: sidePanelDefaultContent
+                    }
+                };
+                searchWidget.clear(); // clear searchBar
+            } else if (objectId !== newObjectId) {
+                highlight ?.remove();
+                objectId = newObjectId;
+                feature.graphic = searchResultc;
+                highlight = currentLayer.highlight(searchResult);
+            }
+
+        });
+
+        //// Create LayerViews ////
+        const layersObjIdField = {}; // dict for every layer's objectIdField
+
+        layers.forEach((layer) => {
+            console.log(layer);
+            layersObjIdField[`${layer.id}`] = layer.objectIdField
+
+            view.whenLayerView(layer).then((layerView) => {
+                let highlight;
+                let objectId;
+
+                const debouncedUpdate = promiseUtils.debounce(async (event) => {
+                    searchWidget.clear(); // clear searchBar
+                    // Perform a hitTest on the View
+                    const hitTest = await view.hitTest(event);
+                    // Make sure graphic has a popupTemplate
+                    const results = hitTest.results.filter((result) => {
+                        return result.graphic.layer.popupTemplate;
+                    });
+
+                    const result = results[0];
+                    const newObjectId = result && result.graphic.attributes[layersObjIdField[result.layer.id]];
+                    if (!newObjectId) {
+                        highlight ?.remove();
+                        objectId = feature.graphic = {
+                            popupTemplate: {
+                                content: sidePanelDefaultContent
+                            }
+                        };
+                    } else if (objectId !== newObjectId) {
+                        highlight ?.remove();
+                        objectId = newObjectId;
+                        feature.graphic = result.graphic;
+                        highlight = layerView.highlight(result.graphic);
+                    }
+                });
+
+                // Listen for the pointer-move event on the View
+                view.on("click", (event) => {
+                    debouncedUpdate(event).catch((err) => {
+                        if (!promiseUtils.isAbortError(err)) {
+                            throw err;
+                        }
+                    });
+                });
+            });
+        });
+
+        // return({ feature, sidePanelDefaultContent })
+    }
+
+
+    require(
+        [
+            "esri/Basemap",
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/widgets/BasemapToggle",
+            "esri/widgets/Search",
+            "esri/layers/FeatureLayer",
+            "esri/layers/GeoJSONLayer",
+            "esri/widgets/Legend",
+            "esri/widgets/LayerList",
+            "esri/layers/GroupLayer",
+            "esri/widgets/Expand",
+            "esri/widgets/FeatureTable",
+            "esri/widgets/TimeSlider",
+            "esri/widgets/Slider",
+            "esri/widgets/Feature",
+            "esri/layers/GraphicsLayer",
+            "esri/Graphic",
+            "esri/layers/support/Field",
+            "esri/widgets/BasemapGallery",
+            "esri/core/promiseUtils", // New
+            "esri/widgets/Popup"
+        ],
+        (
+            Basemap,
+            Map,
+            MapView,
+            BasemapToggle,
+            Search,
+            FeatureLayer,
+            GeoJSONLayer,
+            Legend,
+            LayerList,
+            GroupLayer,
+            Expand,
+            FeatureTable,
+            TimeSlider,
+            Slider,
+            Feature,
+            GraphicsLayer,
+            Graphic,
+            Field,
+            BasemapGallery,
+            promiseUtils, // New
+            Popup
+
+        ) => {
+
+            // Sticking the custom basemap into the map object ----------------------------------------------------------------------------------
+            const map = new Map({
+                basemap: "gray-vector" //list of base maps : https://developers.arcgis.com/javascript/latest/api-reference/esri-Map.html#properties-summary
+            });
+
+            // 2. Adding the map object to the viewer ----------------------------------------------------------------------------------
+            const view = new MapView({
+                container: "map",
+                map: map,
+                center: [-73.977, 40.734],
+                zoom: 13,
+                popup: {
+                    autoOpenEnabled: false
+                }
+            });
+
+
+            view.when().then(() => {
+                // side panel: initial text ----------------------------------------------------------------------------------
+                const sidePanelDefaultContent = `
+                                        <b><h1 style="font-size: 35px;"> Welcome to the Sidewalk Assets Map </h1></b>
+                                        <p>
+                                            
+                                            Click any point on the map to display the information here! <br>
+                                            
+                                            <br>
+                                            Buttons on the top-left corner of the map: 
+                                            <dl>
+                                                <dt> <span class="esri-icon-plus" aria-label="esri-icon-plus" style="margin-right: 3px; border-style: outset; padding: 3px;"></span> Zoom In  
+                                                <dt> <span class="esri-icon-minus" aria-label="esri-icon-minus" style="margin-right: 3px; border-style: outset; padding: 3px;"></span> Zoom Out  
+                                                <dt> <span class="esri-icon-layers" aria-label="esri-icon-layers" style="margin-right: 3px; border-style: outset; padding: 3px;"></span> List of Layers Inside of Collapsible Groups 
+                                                    <dd> Turn visibility of layers on and off 
+                                                <dt> <span class="esri-icon-basemap" aria-label="esri-icon-basemap" style="margin-right: 3px; border-style: outset; padding: 3px;"></span> List of Basemaps Available 
+                                                    <dd> Change the default <b>Light Gray Canvas</b> basemap to your own preference 
+                                                <dt> <span class="esri-icon-layer-list" aria-label="esri-icon-layer-list" style="margin-right: 3px; border-style: outset; padding: 3px;"></span> Legend of Visible Layers 
+                                            <dl>
+                                        </p>
+                                    `
+                // side panel: calls the layers so they could be displayed on the side panel -----------------------------------------------
+                const layers = [
+                    CityCouncilDistricts,
+                    CommunityDistricts,
+                    CongressionalDistricts,
+                    FireBatallions,
+                    PolicePrecincts,
+                    SchoolDistricts,
+                    StateAssemblyDistricts,
+                    StateSenateDistricts,
+
+                    BikeLanes,
+                    HOVLanes,
+                    PedPlanDemand,
+                    PedestrianRamps,
+                    CobblestoneStreets,
+                    ConcreteStreets,
+                    AllWayStops
+                ]
+                SidePanelFunc({
+                    view,
+                    searchWidget,
+                    Feature,
+                    layers,
+                    promiseUtils,
+                    sidePanelDefaultContent
+                });
+
+            });
+
+            //------------------------------POLITICAL BOUNDARIES------------------------------
+            const CityCouncilDistricts = new FeatureLayer({
+                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/0",
+                renderer: {
+                    type: "simple", // Simple Renderer 
+                    label: "City Council Districts", //this label goes next to the color on legend
+                    symbol: {
+                        type: "simple-fill",
+                        color: "YellowGreen",
+                        style: 'solid',
+                        size: 7,
+                        outline: {
+                            color: "YellowGreen"
+                        }
+                    },
+                },
+                popupTemplate: {
+                    title: "<h2>City Council Districts</h2>",
+                    content:
+                        `
+                <div>                     
+                    <h4 style="font-weight: lighter; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{OBJECTID}</h3> 
+                </div>
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">CounDist:</h4>
+                    <h3 style="display: inline-block;">{CounDist}</h3> 
+                </div>       
+                `,
+                },
+                visible: true
+            });
+            map.add(CityCouncilDistricts);
+
+            const CommunityDistricts = new FeatureLayer({
+
+                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/1",
+                renderer: {
+                    type: "simple", // Simple Renderer 
+                    label: "Community Districts", //this label goes next to the color on legend
+                    symbol: {
+                        type: "simple-fill",
+                        color: "SeaGreen",
+                        style: 'solid',
+                        size: 7,
+                        outline: {
+                            color: "SeaGreen"
+                        }
+                    },
+                },
+                popupTemplate: {
+                    title: "<h2>Community Districts</h2>",
+                    content:
+                        `
+                <div>                     
+                    <h4 style="font-weight: lighter; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{OBJECTID}</h3> 
+                </div>
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">BoroCD:</h4>
+                    <h3 style="display: inline-block;">{BoroCD}</h3> 
+                </div>       
+                `,
+                },
+                visible: true
+            });
+            map.add(CommunityDistricts);
+
+            const CongressionalDistricts = new FeatureLayer({
+                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/2",
+                renderer: {
+                    type: "simple", // Simple Renderer 
+                    label: "Congressional Districts", //this label goes next to the color on legend
+                    symbol: {
+                        type: "simple-fill",
+                        color: "OliveDrab",
+                        style: 'solid',
+                        size: 7,
+                        outline: {
+                            color: "OliveDrab"
+                        }
+                    },
+                },
+                popupTemplate: {
+                    title: "<h2>Congressional Districts</h2>",
+                    content:
+                        `
+                <div>                     
+                    <h4 style="font-weight: lighter; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{OBJECTID}</h3> 
+                </div>
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">CongDist:</h4>
+                    <h3 style="display: inline-block;">{CongDist}</h3> 
+                </div>       
+                `,
+                },
+                visible: true
+            });
+            map.add(CongressionalDistricts);
+
+            const FireBatallions = new FeatureLayer({
+                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/3",
+                renderer: {
+                    type: "simple", // Simple Renderer 
+                    label: "Fire Batallions", //this label goes next to the color on legend
+                    symbol: {
+                        type: "simple-fill",
+                        color: "Olive",
+                        style: 'solid',
+                        size: 7,
+                        outline: {
+                            color: "Olive"
+                        }
+                    },
+                },
+                popupTemplate: {
+                    title: "<h2>Fire Batallions</h2>",
+                    content:
+                        `
+                <div>                     
+                    <h4 style="font-weight: lighter; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{OBJECTID}</h3> 
+                </div>
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">FireBN:</h4>
+                    <h3 style="display: inline-block;">{FireBN}</h3> 
+                </div>       
+                `,
+                },
+                visible: true
+            });
+            map.add(FireBatallions);
+
+            const PolicePrecincts = new FeatureLayer({
+                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/4",
+                renderer: {
+                    type: "simple", // Simple Renderer 
+                    label: "Police Precincts", //this label goes next to the color on legend
+                    symbol: {
+                        type: "simple-fill",
+                        color: "MediumSeaGreen",
+                        style: 'solid',
+                        size: 7,
+                        outline: {
+                            color: "MediumSeaGreen"
+                        }
+                    },
+                },
+                popupTemplate: {
+                    title: "<h2>Police Precincts</h2>",
+                    content:
+                        `
+                <div>                     
+                    <h4 style="font-weight: lighter; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{OBJECTID}</h3> 
+                </div>
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">Precinct:</h4>
+                    <h3 style="display: inline-block;">{Precinct}</h3> 
+                </div>       
+                `,
+                },
+                visible: true
+            });
+            map.add(PolicePrecincts);
+
+            const SchoolDistricts = new FeatureLayer({
+                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/5",
+                renderer: {
+                    type: "simple", // Simple Renderer 
+                    label: "School Districts", //this label goes next to the color on legend
+                    symbol: {
+                        type: "simple-fill",
+                        color: "LimeGreen",
+                        style: 'solid',
+                        size: 7,
+                        outline: {
+                            color: "LimeGreen"
+                        }
+                    },
+                },
+                popupTemplate: {
+                    title: "<h2>School Districts</h2>",
+                    content:
+                        `
+                <div>                     
+                    <h4 style="font-weight: lighter; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{OBJECTID}</h3> 
+                </div>
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">SchoolDist:</h4>
+                    <h3 style="display: inline-block;">{SchoolDist}</h3> 
+                </div>       
+                `,
+                },
+                visible: true
+            });
+            map.add(SchoolDistricts);
+
+            const StateAssemblyDistricts = new FeatureLayer({
+                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/6",
+                renderer: {
+                    type: "simple", // Simple Renderer 
+                    label: "State Assembly Districts", //this label goes next to the color on legend
+                    symbol: {
+                        type: "simple-fill",
+                        color: "LightGreen",
+                        style: 'solid',
+                        size: 7,
+                        outline: {
+                            color: "LightGreen"
+                        }
+                    },
+                },
+                popupTemplate: {
+                    title: "<h2>State Assembly Districts</h2>",
+                    content:
+                        `
+                <div>                     
+                    <h4 style="font-weight: lighter; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{OBJECTID}</h3> 
+                </div>
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">AssemDist:</h4>
+                    <h3 style="display: inline-block;">{AssemDist}</h3> 
+                </div>        
+                `,
+                },
+                visible: true
+            });
+            map.add(StateAssemblyDistricts);
+
+            const StateSenateDistricts = new FeatureLayer({
+                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/7",
+                renderer: {
+                    type: "simple", // Simple Renderer 
+                    label: "State Senate Districts", //this label goes next to the color on legend
+                    symbol: {
+                        type: "simple-fill",
+                        color: "Green",
+                        style: 'solid',
+                        size: 7,
+                        outline: {
+                            color: "Green"
+                        }
+                    },
+                },
+                popupTemplate: {
+                    title: "<h2>State Senate Districts</h2>",
+                    content:
+                        `
+                <div>                     
+                    <h4 style="font-weight: lighter; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{OBJECTID}</h3> 
+                </div>
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">StSenDist:</h4>
+                    <h3 style="display: inline-block;">{StSenDist}</h3> 
+                </div>       
+                `,
+                },
+                visible: true
+            });
+            map.add(StateSenateDistricts);
+            //------------------------------------------Lanes------------------------------------------
+            const BikeLanes = new FeatureLayer({
+                url: "https://gis.nycdot.nyc/arcgis/rest/services/APM/Bike_Lane/MapServer/0",
+                renderer: {
+                    type: "simple", // Simple Renderer 
+                    label: "Bike Lanes", //this label goes next to the color on legend
+                    symbol: {
+                        type: "simple-line",
+                        color: "HotPink",
+                        style: 'solid',
+                        size: 7,
+                        outline: {
+                            width: 2,
+                            color: "HotPink"
+                        }
+                    },
+                },
+                popupTemplate: {
+                    title: "<h2>Bike Lanes</h2>",
+                    content:
+                        `
+                <div>                     
+                    <h4 style="font-weight: lighter; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{OBJECTID}</h3> 
+                </div>
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{Borough Code}</h3> 
+                </div>       
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">street:</h4>
+                    <h3 style="display: inline-block;">{Street}</h3> 
+                </div>  
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">ft_facilit:</h4>
+                    <h3 style="display: inline-block;">{Startpoint Bicycle Facility}</h3> 
+                </div> 
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">tf_facilit:</h4>
+                    <h3 style="display: inline-block;">{Endpoint Bicycle Facility}</h3> 
+                </div>  
+                `,
+                },
+                visible: false
+            });
+            map.add(BikeLanes);
+
+            const HOVLanes = new FeatureLayer({
+                url: "https://gis.nycdot.nyc/arcgis/rest/services/APM/HOV_Lanes/MapServer/0",
+                renderer: {
+                    type: "simple", // Simple Renderer 
+                    label: "HOV Lanes", //this label goes next to the color on legend
+                    symbol: {
+                        type: "simple-line",
+                        color: "MediumVioletRed",
+                        style: 'solid',
+                        size: 7,
+                        outline: {
+                            width: 2,
+                            color: "MediumVioletRed"
+                        }
+                    },
+                },
+                popupTemplate: {
+                    title: "<h2>HOV Lanes</h2>",
+                    content:
+                        `
+                <div>                     
+                    <h4 style="font-weight: lighter; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{OBJECTID}</h3> 
+                </div>
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{Borough Code}</h3> 
+                </div>       
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">street:</h4>
+                    <h3 style="display: inline-block;">{Street}</h3> 
+                </div>  
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">Facility:</h4>
+                    <h3 style="display: inline-block;">{Facility}</h3> 
+                </div>  
+                `,
+                },
+                visible: false
+            });
+            map.add(HOVLanes);
+            //------------------------------------------Ped Plan Demand------------------------------------------
+            const PedPlanDemand = new FeatureLayer({
+                url: "https://gis.nycdot.nyc/arcgis/rest/services/APM/Ped_Plan_Demand/MapServer/0",
+                renderer: {
+                    type: "simple", // Simple Renderer 
+                    label: "Ped Plan Demand", //this label goes next to the color on legend
+                    symbol: {
+                        type: "simple-line",
+                        color: "blue",
+                        style: 'solid',
+                        size: 7,
+                        outline: {
+                            width: 2,
+                            color: "blue"
+                        }
+                    },
+                },
+                popupTemplate: {
+                    title: "<h2>Ped Plan Demand</h2>",
+                    content:
+                        `
+                <div>                     
+                    <h4 style="font-weight: lighter; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{OBJECTID}</h3> 
+                </div>
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{Borough Code}</h3> 
+                </div>       
+                `,
+                },
+                visible: false
+            });
+            map.add(PedPlanDemand);
+            //------------------------------------------PedestrianRamps------------------------------------------
+            const PedestrianRamps = new FeatureLayer({
+                url: "https://gis.nycdot.nyc/arcgis/rest/services/PEDRAMPS/PEDRAMPS_READONLY/MapServer/0",
+                renderer: {
+                    type: "simple", // Simple Renderer 
+                    label: "Pedestrian Ramps (Inspected)", //this label goes next to the color on legend
+                    symbol: {
+                        type: "simple-marker",
+                        color: "DarkTurquoise",
+                        style: 'solid',
+                        size: 7,
+                        outline: {
+                            color: "DarkTurquoise"
+                        }
+                    },
+                },
+                popupTemplate: {
+                    title: "<h2>Pedestrian Ramps (Inspected)</h2>",
+                    content:
+                        `
+                <div>                     
+                    <h4 style="font-weight: lighter; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{OBJECTID}</h3> 
+                </div>
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">Survey Date:</h4>
+                    <h3 style="display: inline-block;">{SURVEY_DATE}</h3> 
+                </div>       
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">Street Name 1:</h4>
+                    <h3 style="display: inline-block;">{STNAME1}</h3> 
+                </div>  
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">Street Name 2:</h4>
+                    <h3 style="display: inline-block;">{STNAME2}</h3> 
+                </div>  
+                `,
+                },
+                visible: false
+            });
+            map.add(PedestrianRamps);
+            //------------------------------------------Streets------------------------------------------
+            const CobblestoneStreets = new FeatureLayer({
+                url: "https://gis.nycdot.nyc/arcgis/rest/services/APM/Cobblestone_Streets/MapServer/0",
+                renderer: {
+                    type: "simple", // Simple Renderer 
+                    label: "Cobblestone Streets", //this label goes next to the color on legend
+                    symbol: {
+                        type: "simple-line",
+                        color: "Indigo",
+                        style: 'solid',
+                        size: 7,
+                        outline: {
+                            width: 2,
+                            color: "Indigo"
+                        }
+                    },
+                },
+                popupTemplate: {
+                    title: "<h2>Cobblestone Streets</h2>",
+                    content:
+                        `
+                <div>                     
+                    <h4 style="font-weight: lighter; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{OBJECTID}</h3> 
+                </div>     
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">street:</h4>
+                    <h3 style="display: inline-block;">{Street}</h3> 
+                </div>  
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">Segment ID:</h4>
+                    <h3 style="display: inline-block;">{SegmentI_1}</h3> 
+                </div>  
+                `,
+                },
+                visible: false
+            });
+            map.add(CobblestoneStreets);
+
+            const ConcreteStreets = new FeatureLayer({
+                url: "https://gis.nycdot.nyc/arcgis/rest/services/APM/Concrete_Streets/MapServer/0",
+                renderer: {
+                    type: "simple", // Simple Renderer 
+                    label: "Concrete Streets", //this label goes next to the color on legend
+                    symbol: {
+                        type: "simple-line",
+                        color: "DarkMagenta",
+                        style: 'solid',
+                        size: 7,
+                        outline: {
+                            width: 2,
+                            color: "DarkMagenta"
+                        }
+                    },
+                },
+                popupTemplate: {
+                    title: "<h2>Concrete Streets</h2>",
+                    content:
+                        `
+                <div>                     
+                    <h4 style="font-weight: lighter; display: inline-block;">OBJECTID:</h4>
+                    <h3 style="display: inline-block;">{OBJECTID}</h3> 
+                </div>
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">On Street:</h4>
+                    <h3 style="display: inline-block;">{OnPrimaryName}</h3> 
+                </div>       
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">From Street:</h4>
+                    <h3 style="display: inline-block;">{FromPrimaryName}</h3> 
+                </div>  
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">To Street:</h4>
+                    <h3 style="display: inline-block;">{ToPrimaryName}</h3> 
+                </div>  
+                `,
+                },
+                visible: false
+            });
+            map.add(ConcreteStreets);
+            //------------------------------------------AllWayStops------------------------------------------
+            const AllWayStops = new FeatureLayer({
+                url: "https://gis.nycdot.nyc/arcgis/rest/services/GAZETTEER/NYCDOTBasemapAdminBoundaries/MapServer/0",
+                renderer: {
+                    type: "simple", // Simple Renderer 
+                    label: "City Council Districts", //this label goes next to the color on legend
+                    symbol: {
+                        type: "simple-fill",
+                        color: "Orange",
+                        style: 'solid',
+                        size: 7,
+                        outline: {
+                            color: "Orange"
+                        }
+                    },
+                },
+                popupTemplate: {
+                    title: "<h2>All Way Stops</h2>",
+                    content:
+                        `
+                <div>                     
+                    <h4 style="font-weight: lighter; display: inline-block;">Completed On:</h4>
+                    <h3 style="display: inline-block;">{completed_on}</h3> 
+                </div>
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">Min Completed On Date:</h4>
+                    <h3 style="display: inline-block;">{min_completed_on_date}</h3> 
+                </div>       
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">From Street:</h4>
+                    <h3 style="display: inline-block;">{from_Street}</h3> 
+                </div>  
+                <div> 
+                    <h4 style="font-weight: lighter; margin-top:1.75em; display: inline-block;">On Street:</h4>
+                    <h3 style="display: inline-block;">{on_street}</h3> 
+                </div>  
+                `,
+                },
+                visible: false
+            });
+            map.add(AllWayStops);
+
+            // Layerlist ----------------------------------------------------------------------------------
+            //-------------------------------------------4. Adding Collapsible Layer Bar-------------------------------------------
+            //-------------------------------------------4. Adding Collapsible Layer Bar-------------------------------------------
+            //Political Boundaries
+            const groupLayer = new GroupLayer({
+                title: "POLITICAL BOUNDARIES",
+                visible: false,
+                visibilityMode: "independent",
+                layers: [CityCouncilDistricts, CommunityDistricts, CongressionalDistricts, FireBatallions, PolicePrecincts, SchoolDistricts, StateAssemblyDistricts, StateSenateDistricts],
+                opacity: 0.75
+            });
+
+            const layerList = new LayerList({
+                view: view,
+            });
+
+            const lgExpand = new Expand({
+                view: view,
+                content: layerList,
+                expandTooltip: 'Add Layers to Map'
+            });
+
+            view.ui.add(lgExpand, {
+                position: 'top-left'
+            });
+
+            map.add(groupLayer)
+
+            //5. Adding a Legend
+            const legend = new Legend({
+                view: view
+            })
+
+            const legendExpand = new Expand({
+                view: view,
+                content: legend,
+                expandIconClass: 'esri-icon-legend',
+                expandTooltip: 'Display Legend'
+            })
+
+            
+
+            //Lanes
+            const groupLayer1 = new GroupLayer({
+                title: "LANES",
+                visible: false,
+                visibilityMode: "independent",
+                layers: [HOVLanes, BikeLanes],
+                opacity: 0.75
+            });
+
+            const layerList1 = new LayerList({
+                view: view,
+            });
+
+            const lgExpand1 = new Expand({
+                view: view,
+                content: layerList,
+                expandTooltip: 'Add Layers to Map'
+            });
+
+            map.add(groupLayer1)
+
+            //5. Adding a Legend
+            const legend1 = new Legend({
+                view: view
+            })
+
+            const legendExpand1 = new Expand({
+                view: view,
+                content: legend,
+                expandIconClass: 'esri-icon-legend',
+                expandTooltip: 'Display Legend'
+            })
+
+            //Streets
+            const groupLayer2 = new GroupLayer({
+                title: "STREETS",
+                visible: false,
+                visibilityMode: "independent",
+                layers: [CobblestoneStreets, ConcreteStreets],
+                opacity: 0.75
+            });
+
+            const layerList2 = new LayerList({
+                view: view,
+            });
+
+            const lgExpand2 = new Expand({
+                view: view,
+                content: layerList,
+                expandTooltip: 'Add Layers to Map'
+            });
+
+            map.add(groupLayer2)
+
+            //5. Adding a Legend
+            const legend2 = new Legend({
+                view: view
+            })
+
+            const legendExpand2 = new Expand({
+                view: view,
+                content: legend,
+                expandIconClass: 'esri-icon-legend',
+                expandTooltip: 'Display Legend'
+            })
+
+            //Pedesritans
+            const groupLayer3 = new GroupLayer({
+                title: "PEDESTRIANS",
+                visible: false,
+                visibilityMode: "independent",
+                layers: [PedestrianRamps, PedPlanDemand],
+                opacity: 0.75
+            });
+
+            const layerList3 = new LayerList({
+                view: view,
+            });
+
+            const lgExpand3 = new Expand({
+                view: view,
+                content: layerList,
+                expandTooltip: 'Add Layers to Map'
+            });
+
+            map.add(groupLayer3)
+
+            //5. Adding a Legend
+            const legend3 = new Legend({
+                view: view
+            })
+
+            const legendExpand3 = new Expand({
+                view: view,
+                content: legend,
+                expandIconClass: 'esri-icon-legend',
+                expandTooltip: 'Display Legend'
+            })
+
+            // Add expand button for Legend ----------------------------------------------------------------------------------
+            view.when(() => {
+                const Legendwidget = new Legend({
+                    view: view
+                });
+
+                LegendExpand = new Expand({
+                    expandIcon: "legend",
+                    view: view,
+                    content: Legendwidget,
+                    expandTooltip: "Legend"
+                });
+
+                view.ui.add(LegendExpand, {
+                    position: 'top-left'
+                });
+            });
+
+            // Adding a search input ----------------------------------------------------------------------------------
+            const searchWidget = new Search({
+                view: view,
+            });
+            view.ui.add(searchWidget, { position: "manually", }); // changed to manually
+
+            // Add basemap gallery ----------------------------------------------------------------------------------
+            const basemapGallery = new BasemapGallery({
+                container: document.createElement("div"),
+                view: view
+            });
+            bgExpand = new Expand({
+                expandIconClass: "esri-icon-basemap",
+                view: view,
+                content: basemapGallery,
+                expandTooltip: "Change Basemap"
+            })
+            // Add the widget to the top-right corner of the view
+            view.ui.add(bgExpand, "top-left");
+
+        });
+
+
+</script>
+
+</html>

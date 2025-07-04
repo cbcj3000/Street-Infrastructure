@@ -28,4 +28,4 @@ An interactive map displaying street infrastructure across New York City with dy
 
 - Clone this repository:
 ```git clone https://github.com/cbcj3000/Street-Infrastructure.git```
-- Open StreetInfastructure.html in your browser.
+- Open Street Infastructure.html in your browser.

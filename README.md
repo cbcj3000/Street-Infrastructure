@@ -23,6 +23,7 @@ An interactive map displaying street infrastructure across New York City with dy
 - Include export options for filtered data
 
 **Setup Instructions**
+
 *Note: API links to live data have been removed for security reasons.*
 
 - Clone this repository:

@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
     <title>Street Infrastructure</title>
-
     <link rel="stylesheet" href="https://js.arcgis.com/4.26/esri/themes/light/main.css" />
     <script src="https://js.arcgis.com/4.26/"></script>
 
@@ -108,7 +107,6 @@
             }
         }
 
-        // create div for graphic
         let sidePanelDiv = document.createElement("div");
         sidePanelDiv.id = "sidePanel";
         sidePanelDiv.className = "esri-widget"
@@ -117,7 +115,6 @@
         sliderDiv.id = "sliderC";
         sliderDiv.style.background = "black"
 
-        // append div to main HTML container
         const mainContainer = document.getElementById("map")
         const firstChild = mainContainer.firstChild
         if (firstChild) {
@@ -125,30 +122,19 @@
         } else {
             mainContainer.appendChild(sidePanelDiv)
         }
-
-        // Provide graphic to a new instance of a Feature widget
         const feature = new Feature({
             container: document.getElementById("sidePanel"),
             graphic: graphic,
-            map: view.map, //????
-            spatialReference: view.spatialReference //????
+            map: view.map, 
+            spatialReference: view.spatialReference
         });
 
         //// SearchBar /////
-
-        // create div for searchBar
         let searchBarDiv = document.createElement("div");
         searchBarDiv.id = "searchBar";
-
-        // append div to sidePanelDiv
         document.getElementById("sidePanel").appendChild(searchBarDiv)
-        // document.getElementById("sidePanel").appendChild(sliderDiv)
-
-        // set searchBarDiv as container of widget
-        // Position should be set as "manually" when adding the widget to view 
         searchWidget.container = document.getElementById("searchBar")
 
-        // Add styles to HTML 
         const styles = `
     #sidePanel {
       float: left;
@@ -168,20 +154,15 @@
         styleSheet.innerText = styles
         document.head.appendChild(styleSheet)
 
-        // Executes after selecting a search result
         searchWidget.on("select-result", function (event) {
             let highlight;
             let objectId;
 
             const searchResult = event.result.target;
-            feature.graphic = searchResult; // render results in sidepanel
-
-            // make visible searchResult's layer
+            feature.graphic = searchResult; 
             const currentLayer = view.map.findLayerById(searchResult.sourceLayer.id)
             currentLayer.visible = true;
-
             const newObjectId = event.result.key;
-
             if (!newObjectId) {
                 highlight ?.remove();
                 objectId = feature.graphic = {
@@ -189,7 +170,7 @@
                         content: sidePanelDefaultContent
                     }
                 };
-                searchWidget.clear(); // clear searchBar
+                searchWidget.clear();
             } else if (objectId !== newObjectId) {
                 highlight ?.remove();
                 objectId = newObjectId;
@@ -199,9 +180,7 @@
 
         });
 
-        //// Create LayerViews ////
-        const layersObjIdField = {}; // dict for every layer's objectIdField
-
+        const layersObjIdField = {};
         layers.forEach((layer) => {
             console.log(layer);
             layersObjIdField[`${layer.id}`] = layer.objectIdField
@@ -211,10 +190,8 @@
                 let objectId;
 
                 const debouncedUpdate = promiseUtils.debounce(async (event) => {
-                    searchWidget.clear(); // clear searchBar
-                    // Perform a hitTest on the View
+                    searchWidget.clear();
                     const hitTest = await view.hitTest(event);
-                    // Make sure graphic has a popupTemplate
                     const results = hitTest.results.filter((result) => {
                         return result.graphic.layer.popupTemplate;
                     });
@@ -236,7 +213,6 @@
                     }
                 });
 
-                // Listen for the pointer-move event on the View
                 view.on("click", (event) => {
                     debouncedUpdate(event).catch((err) => {
                         if (!promiseUtils.isAbortError(err)) {
@@ -246,8 +222,6 @@
                 });
             });
         });
-
-        // return({ feature, sidePanelDefaultContent })
     }
 
 
@@ -272,7 +246,7 @@
             "esri/Graphic",
             "esri/layers/support/Field",
             "esri/widgets/BasemapGallery",
-            "esri/core/promiseUtils", // New
+            "esri/core/promiseUtils", 
             "esri/widgets/Popup"
         ],
         (
@@ -295,7 +269,7 @@
             Graphic,
             Field,
             BasemapGallery,
-            promiseUtils, // New
+            promiseUtils, 
             Popup
 
         ) => {
@@ -315,7 +289,6 @@
                     autoOpenEnabled: false
                 }
             });
-
 
             view.when().then(() => {
                 // side panel: initial text ----------------------------------------------------------------------------------
@@ -372,8 +345,8 @@
             const CityCouncilDistricts = new FeatureLayer({
                 url: "",
                 renderer: {
-                    type: "simple", // Simple Renderer 
-                    label: "City Council Districts", //this label goes next to the color on legend
+                    type: "simple",
+                    label: "City Council Districts",
                     symbol: {
                         type: "simple-fill",
                         color: "YellowGreen",
@@ -406,8 +379,8 @@
 
                 url: "",
                 renderer: {
-                    type: "simple", // Simple Renderer 
-                    label: "Community Districts", //this label goes next to the color on legend
+                    type: "simple", 
+                    label: "Community Districts", 
                     symbol: {
                         type: "simple-fill",
                         color: "SeaGreen",
@@ -439,8 +412,8 @@
             const CongressionalDistricts = new FeatureLayer({
                 url: "",
                 renderer: {
-                    type: "simple", // Simple Renderer 
-                    label: "Congressional Districts", //this label goes next to the color on legend
+                    type: "simple", 
+                    label: "Congressional Districts",
                     symbol: {
                         type: "simple-fill",
                         color: "OliveDrab",
@@ -472,8 +445,8 @@
             const FireBatallions = new FeatureLayer({
                 url: "",
                 renderer: {
-                    type: "simple", // Simple Renderer 
-                    label: "Fire Batallions", //this label goes next to the color on legend
+                    type: "simple",
+                    label: "Fire Batallions", 
                     symbol: {
                         type: "simple-fill",
                         color: "Olive",
@@ -505,8 +478,8 @@
             const PolicePrecincts = new FeatureLayer({
                 url: "",
                 renderer: {
-                    type: "simple", // Simple Renderer 
-                    label: "Police Precincts", //this label goes next to the color on legend
+                    type: "simple", 
+                    label: "Police Precincts", 
                     symbol: {
                         type: "simple-fill",
                         color: "MediumSeaGreen",
@@ -538,8 +511,8 @@
             const SchoolDistricts = new FeatureLayer({
                 url: "",
                 renderer: {
-                    type: "simple", // Simple Renderer 
-                    label: "School Districts", //this label goes next to the color on legend
+                    type: "simple",
+                    label: "School Districts", 
                     symbol: {
                         type: "simple-fill",
                         color: "LimeGreen",
@@ -571,8 +544,8 @@
             const StateAssemblyDistricts = new FeatureLayer({
                 url: "",
                 renderer: {
-                    type: "simple", // Simple Renderer 
-                    label: "State Assembly Districts", //this label goes next to the color on legend
+                    type: "simple", 
+                    label: "State Assembly Districts",
                     symbol: {
                         type: "simple-fill",
                         color: "LightGreen",
@@ -604,8 +577,8 @@
             const StateSenateDistricts = new FeatureLayer({
                 url: "",
                 renderer: {
-                    type: "simple", // Simple Renderer 
-                    label: "State Senate Districts", //this label goes next to the color on legend
+                    type: "simple", 
+                    label: "State Senate Districts",
                     symbol: {
                         type: "simple-fill",
                         color: "Green",
@@ -637,8 +610,8 @@
             const BikeLanes = new FeatureLayer({
                 url: "",
                 renderer: {
-                    type: "simple", // Simple Renderer 
-                    label: "Bike Lanes", //this label goes next to the color on legend
+                    type: "simple", 
+                    label: "Bike Lanes", 
                     symbol: {
                         type: "simple-line",
                         color: "HotPink",
@@ -683,8 +656,8 @@
             const HOVLanes = new FeatureLayer({
                 url: "",
                 renderer: {
-                    type: "simple", // Simple Renderer 
-                    label: "HOV Lanes", //this label goes next to the color on legend
+                    type: "simple", 
+                    label: "HOV Lanes", 
                     symbol: {
                         type: "simple-line",
                         color: "MediumVioletRed",
@@ -725,8 +698,8 @@
             const PedPlanDemand = new FeatureLayer({
                 url: "",
                 renderer: {
-                    type: "simple", // Simple Renderer 
-                    label: "Ped Plan Demand", //this label goes next to the color on legend
+                    type: "simple", 
+                    label: "Ped Plan Demand", 
                     symbol: {
                         type: "simple-line",
                         color: "blue",
@@ -759,8 +732,8 @@
             const PedestrianRamps = new FeatureLayer({
                 url: "",
                 renderer: {
-                    type: "simple", // Simple Renderer 
-                    label: "Pedestrian Ramps (Inspected)", //this label goes next to the color on legend
+                    type: "simple", 
+                    label: "Pedestrian Ramps (Inspected)",
                     symbol: {
                         type: "simple-marker",
                         color: "DarkTurquoise",
@@ -800,8 +773,8 @@
             const CobblestoneStreets = new FeatureLayer({
                 url: "",
                 renderer: {
-                    type: "simple", // Simple Renderer 
-                    label: "Cobblestone Streets", //this label goes next to the color on legend
+                    type: "simple", 
+                    label: "Cobblestone Streets", 
                     symbol: {
                         type: "simple-line",
                         color: "Indigo",
@@ -838,8 +811,8 @@
             const ConcreteStreets = new FeatureLayer({
                 url: "",
                 renderer: {
-                    type: "simple", // Simple Renderer 
-                    label: "Concrete Streets", //this label goes next to the color on legend
+                    type: "simple", 
+                    label: "Concrete Streets",
                     symbol: {
                         type: "simple-line",
                         color: "DarkMagenta",
@@ -880,8 +853,8 @@
             const AllWayStops = new FeatureLayer({
                 url: "",
                 renderer: {
-                    type: "simple", // Simple Renderer 
-                    label: "City Council Districts", //this label goes next to the color on legend
+                    type: "simple", 
+                    label: "City Council Districts",
                     symbol: {
                         type: "simple-fill",
                         color: "Orange",
@@ -943,10 +916,8 @@
             view.ui.add(lgExpand, {
                 position: 'top-left'
             });
-
             map.add(groupLayer)
-
-            //5. Adding a Legend
+            
             const legend = new Legend({
                 view: view
             })
@@ -957,8 +928,6 @@
                 expandIconClass: 'esri-icon-legend',
                 expandTooltip: 'Display Legend'
             })
-
-            
 
             //Lanes
             const groupLayer1 = new GroupLayer({
@@ -1081,7 +1050,7 @@
             const searchWidget = new Search({
                 view: view,
             });
-            view.ui.add(searchWidget, { position: "manually", }); // changed to manually
+            view.ui.add(searchWidget, { position: "manually", }); 
 
             // Add basemap gallery ----------------------------------------------------------------------------------
             const basemapGallery = new BasemapGallery({
@@ -1094,12 +1063,9 @@
                 content: basemapGallery,
                 expandTooltip: "Change Basemap"
             })
-            // Add the widget to the top-right corner of the view
             view.ui.add(bgExpand, "top-left");
-
         });
 
-
 </script>
-
 </html>
+
